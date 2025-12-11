@@ -70,7 +70,7 @@ public class EnemyObjectPool : MonoBehaviour
     // プールからインスタンスを取得した際に行う処理
     private void OnGetObject(EnemyObject enemyObject)
     {
-        enemyObject.transform.position = new Vector3(Random.Range(2, 10), 2, Random.Range(2, 10));
+        enemyObject.transform.position = new Vector3(Random.Range(-10, 10), 2, Random.Range(7, 16));
         enemyObject.Initialize(() => _enemyPool.Release(enemyObject));
         enemyObject.gameObject.SetActive(true);
     }

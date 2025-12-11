@@ -1,5 +1,8 @@
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Pool;
+using System.Collections;
+using System.Collections.Generic;
 
 public class BulletObjectPool : MonoBehaviour
 {
@@ -21,6 +24,8 @@ public class BulletObjectPool : MonoBehaviour
     [SerializeField] private BulletObject _BulletPrefab;  // オブジェクトプールで管理するオブジェクト
     private ObjectPool<BulletObject> _BulletPool;  // オブジェクトプール本体
 
+   
+
     private void Start()
     {
         _BulletPool = new ObjectPool<BulletObject>(
@@ -30,8 +35,28 @@ public class BulletObjectPool : MonoBehaviour
             actionOnDestroy: (obj) => OnDestroyObject(obj),
             collectionCheck: true,
             defaultCapacity: 3,
-            maxSize: 10
+            maxSize: 15
         );
+
+        StartCoroutine(delete());
+
+    }
+
+    private void Update()
+    {
+        
+
+    }
+
+    private IEnumerator delete()
+    {
+        while (true)
+        {
+            yield return new WaitForSeconds(5f);
+
+            ClearBullet();
+
+        }
     }
 
     // プールからオブジェクトを取得する
@@ -41,7 +66,7 @@ public class BulletObjectPool : MonoBehaviour
     }
 
     // プールの中身を空にする
-    public void ClearEnemy()
+    public void ClearBullet()
     {
         _BulletPool.Clear();
     }
