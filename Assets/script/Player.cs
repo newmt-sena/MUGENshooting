@@ -113,6 +113,7 @@ public class Player : MonoBehaviour
         if (collider.gameObject.CompareTag("enemy"))
         {
            Destroy(this.gameObject);
+            GameManager.instance.AddDead();
         }
 
 

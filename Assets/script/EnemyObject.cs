@@ -32,8 +32,8 @@ public class EnemyObject : MonoBehaviour
             Debug.Log("“–‚½‚Á‚½‚æ");
             _onDisable?.Invoke();
             gameObject.SetActive(false);
-           
 
+            GameManager.instance.AddKillCount();
         }
     }
 }
