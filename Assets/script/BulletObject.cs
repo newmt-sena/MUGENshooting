@@ -41,19 +41,12 @@ public class BulletObject : MonoBehaviour
         if (Physics.Raycast(transform.position, _direction, out RaycastHit hit, moveDistance))
         {
             // --- ここが重要！ ---
-            // 当たった相手が敵（enemyタグ）だった場合
             if (hit.collider.CompareTag("enemy"))
             {
-                // 相手のEnemyObjectスクリプトを取得して、直接「ReleaseEnemy」を呼ぶ
-                // ※GetComponentは少し重いですが、当たった瞬間だけなので許容範囲です
                 EnemyObject enemy = hit.collider.GetComponent<EnemyObject>();
                 if (enemy != null)
                 {
-                    // GameManagerのスコア加算もここで行うと確実です
-                    if (GameManager.instance != null) GameManager.instance.AddKillCount();
-
-                    // 敵をプールに戻すメソッドを呼ぶ（外部から呼べるようにEnemyObject側の修正が必要）
-                    enemy.SendMessage("ReleaseEnemy", SendMessageOptions.DontRequireReceiver);
+                    enemy.TakeDamage(1);
                 }
             }
 

@@ -1,5 +1,7 @@
 using UnityEngine;
+using UnityEngine.UI;
 using System.Collections;
+using TMPro;
 
 public class EnemySpawnManager : MonoBehaviour
 {
@@ -11,24 +13,38 @@ public class EnemySpawnManager : MonoBehaviour
     [SerializeField] private Vector3 spawnAreaCenter = new Vector3(0, 0, 10);
     [SerializeField] private Vector3 spawnAreaSize = new Vector3(20, 0, 10);
 
+    [SerializeField] private Text timerText;
+    private float _timer;
+
     private void Start()
     {
         // スポーンのループを開始
         StartCoroutine(SpawnLoop());
     }
 
+    private void Update()
+    {
+        _timer += Time.deltaTime;
+
+        float remain = spawnInterval - _timer;
+        if (remain < 0) remain = 0;
+
+        if (timerText != null)
+            timerText.text = "敵のスポーンまで"+remain.ToString("F1")+"秒";
+    }
+
     private IEnumerator SpawnLoop()
     {
         while (true)
         {
-            // 指定秒数待機
             yield return new WaitForSeconds(spawnInterval);
 
-            // 敵を〇体生成
             for (int i = 0; i < enemiesPerSpawn; i++)
             {
                 Spawn();
             }
+
+            _timer = 0f; // ←ここ追加
         }
     }
 

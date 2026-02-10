@@ -5,9 +5,19 @@ public class EnemyObject : MonoBehaviour
 {
     private Action<EnemyObject> _onDisable;
     private Transform _playerTransform; // 毎回FindしないようにTransformで保持
+    private Rigidbody _rb;
 
     [Header("移動設定")]
     [SerializeField] private float speed = 5f; // インスペクターから調整可能な速度
+
+
+    [SerializeField] private int maxHP = 1;
+    private int currentHP;
+
+    private void Awake()
+    {
+        _rb = GetComponent<Rigidbody>();
+    }
 
     public void Initialize(Action<EnemyObject> onDisable)
     {
@@ -21,26 +31,22 @@ public class EnemyObject : MonoBehaviour
         }
     }
 
-    private void Update()
+    private void FixedUpdate()
     {
         if (_playerTransform == null) return;
 
-        // プレイヤーの方を向いて移動
-        transform.LookAt(_playerTransform);
-        transform.Translate(Vector3.forward * speed * Time.deltaTime);
-    }
+        Vector3 direction = (_playerTransform.position - transform.position);
+        direction.y = 0f;
 
-    private void OnTriggerEnter(Collider other)
-    {
-        // 何かが触れたら必ずログを出す
-        Debug.Log($"敵に何かが当たりました: {other.gameObject.name} (Tag: {other.tag})");
+        float distance = direction.magnitude;
+        if (distance < 1.5f) return;
 
-        if (other.CompareTag("Bullet"))
-        {
-            Debug.Log("弾が当たったと判定されました！");
-            if (GameManager.instance != null) GameManager.instance.AddKillCount();
-            ReleaseEnemy();
-        }
+        direction.Normalize();
+
+        _rb.MovePosition(_rb.position + direction * speed * Time.fixedDeltaTime);
+
+        Quaternion targetRotation = Quaternion.LookRotation(direction);
+        _rb.MoveRotation(Quaternion.Slerp(_rb.rotation, targetRotation, 5f * Time.fixedDeltaTime));
     }
 
     public void ReleaseEnemy()
@@ -49,5 +55,28 @@ public class EnemyObject : MonoBehaviour
 
         gameObject.SetActive(false);
         _onDisable?.Invoke(this); // プールに返却
+    }
+
+    private void OnEnable()
+    {
+        currentHP = maxHP;
+    }
+
+    public void TakeDamage(int damage)
+    {
+        currentHP -= damage;
+
+        if (currentHP <= 0)
+        {
+            Die();
+        }
+    }
+
+    private void Die()
+    {
+        if (GameManager.instance != null)
+            GameManager.instance.AddKillCount();
+
+        ReleaseEnemy();
     }
 }
