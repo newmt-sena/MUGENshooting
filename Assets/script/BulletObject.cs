@@ -1,78 +1,77 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 public class BulletObject : MonoBehaviour
 {
-    private Action _onDisable;  // 非アクティブ化するためのコールバック
-   // private float _elapsedTime;  // 初期化されてからの経過時間
+    private Action<BulletObject> _onDisable;
+    private Vector3 _direction;
+    private float _speed;
+    private bool _isActive = false;
 
-    public void Initialize(Action onDisable)
+    [SerializeField] private float lifeTime = 2.0f; // 弾の射程時間
+    private float _timer;
+
+    public void Initialize(Action<BulletObject> onDisable)
     {
         _onDisable = onDisable;
-       // _elapsedTime = 0;
-    }
-
-    private void Update()
-    {
-        //_elapsedTime += Time.deltaTime;
-
-        //if (_elapsedTime >= 4)
-        //{
-        //    _onDisable?.Invoke();
-        //    gameObject.SetActive(false);
-        //}
     }
 
     public void Fire(Vector3 position, Quaternion rotation, Vector3 direction, float speed)
     {
-        // 1. 位置と向きを設定
         transform.position = position;
         transform.rotation = rotation;
+        _direction = direction.normalized;
+        _speed = speed;
 
-        // 2. 移動処理
-        Rigidbody rb = GetComponent<Rigidbody>();
-
-        // 既存の力が残っている可能性があるので一度リセット
-        rb.velocity = Vector3.zero;
-        rb.angularVelocity = Vector3.zero;
-
-        // 3. 衝撃力を加える（FireBullet.csから移動したロジック）
-        rb.AddForce(direction * speed, ForceMode.Impulse);
-
-        // 4. プールへの自動返却を開始
-        // 0.8秒後に ReleaseBullet メソッドを実行するコルーチンを開始
-        StartCoroutine(ReleaseAfterDelay(0.8f));
-
+        _timer = 0;
+        _isActive = true;
+        gameObject.SetActive(true);
     }
 
-    // 衝突時の処理（EnemyObject.cs との連携）
-    void OnTriggerEnter(Collider other)
+    void Update()
     {
-        // 例: 敵に当たったらすぐにプールに戻す
-        if (other.CompareTag("enemy"))
+        if (!_isActive) return;
+
+        _timer += Time.deltaTime;
+        if (_timer >= lifeTime) { ReleaseBullet(); return; }
+
+        float moveDistance = _speed * Time.deltaTime;
+
+        // 進行方向に何かあるかチェック
+        if (Physics.Raycast(transform.position, _direction, out RaycastHit hit, moveDistance))
         {
+            // --- ここが重要！ ---
+            // 当たった相手が敵（enemyタグ）だった場合
+            if (hit.collider.CompareTag("enemy"))
+            {
+                // 相手のEnemyObjectスクリプトを取得して、直接「ReleaseEnemy」を呼ぶ
+                // ※GetComponentは少し重いですが、当たった瞬間だけなので許容範囲です
+                EnemyObject enemy = hit.collider.GetComponent<EnemyObject>();
+                if (enemy != null)
+                {
+                    // GameManagerのスコア加算もここで行うと確実です
+                    if (GameManager.instance != null) GameManager.instance.AddKillCount();
+
+                    // 敵をプールに戻すメソッドを呼ぶ（外部から呼べるようにEnemyObject側の修正が必要）
+                    enemy.SendMessage("ReleaseEnemy", SendMessageOptions.DontRequireReceiver);
+                }
+            }
+
+            transform.position = hit.point;
             ReleaseBullet();
         }
-       
-        
+        else
+        {
+            transform.position += _direction * moveDistance;
+        }
     }
 
-    // プールへオブジェクトを返却する
     private void ReleaseBullet()
     {
-        // 移動を止め、非アクティブにし、プールに戻す
-        GetComponent<Rigidbody>().velocity = Vector3.zero;
-        gameObject.SetActive(false);
-        _onDisable?.Invoke(); // プールに返却（ObjectPool.Releaseが呼ばれる）
-    }
+        if (!_isActive) return;
 
-    // 指定時間後に弾をプールに戻すコルーチン
-    private System.Collections.IEnumerator ReleaseAfterDelay(float delay)
-    {
-        yield return new WaitForSeconds(delay);
-        ReleaseBullet();
+        _isActive = false;
+        gameObject.SetActive(false);
+        _onDisable?.Invoke(this); // プールに返却
     }
 }

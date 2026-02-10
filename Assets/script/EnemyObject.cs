@@ -1,39 +1,53 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 public class EnemyObject : MonoBehaviour
 {
-    private Action _onDisable;  // 非アクティブ化するためのコールバック
-    private GameObject target;
-    public float speed;
+    private Action<EnemyObject> _onDisable;
+    private Transform _playerTransform; // 毎回FindしないようにTransformで保持
 
+    [Header("移動設定")]
+    [SerializeField] private float speed = 5f; // インスペクターから調整可能な速度
 
-    public void Initialize(Action onDisable)
+    public void Initialize(Action<EnemyObject> onDisable)
     {
         _onDisable = onDisable;
 
-        speed = 0.01f;
-        target = GameObject.Find("Player");
+        // プレイヤーを一度だけ探す（すでに見つけていればスキップ）
+        if (_playerTransform == null)
+        {
+            GameObject player = GameObject.FindGameObjectWithTag("Player");
+            if (player != null) _playerTransform = player.transform;
+        }
     }
 
     private void Update()
     {
-        transform.LookAt(target.transform);
-        transform.position += transform.forward * speed;
+        if (_playerTransform == null) return;
+
+        // プレイヤーの方を向いて移動
+        transform.LookAt(_playerTransform);
+        transform.Translate(Vector3.forward * speed * Time.deltaTime);
     }
 
-    private void OnTriggerEnter(Collider collider)
+    private void OnTriggerEnter(Collider other)
     {
-        if (collider.gameObject.CompareTag("Bullet"))
-        {
-            Debug.Log("当たったよ");
-            _onDisable?.Invoke();
-            gameObject.SetActive(false);
+        // 何かが触れたら必ずログを出す
+        Debug.Log($"敵に何かが当たりました: {other.gameObject.name} (Tag: {other.tag})");
 
-            GameManager.instance.AddKillCount();
+        if (other.CompareTag("Bullet"))
+        {
+            Debug.Log("弾が当たったと判定されました！");
+            if (GameManager.instance != null) GameManager.instance.AddKillCount();
+            ReleaseEnemy();
         }
+    }
+
+    public void ReleaseEnemy()
+    {
+        if (!gameObject.activeSelf) return;
+
+        gameObject.SetActive(false);
+        _onDisable?.Invoke(this); // プールに返却
     }
 }

@@ -3,87 +3,78 @@ using UnityEngine.Pool;
 
 public class EnemyObjectPool : MonoBehaviour
 {
-    // アクセスしやすいようにシングルトン化
     private static EnemyObjectPool _instance;
-    public static EnemyObjectPool Instance
+    public static EnemyObjectPool Instance => _instance;
+
+    [SerializeField] private EnemyObject _enemyPrefab;
+    [SerializeField] private int _defaultCapacity = 5;
+    [SerializeField] private int _maxSize = 15;
+
+    private ObjectPool<EnemyObject> _enemyPool;
+
+    private void Awake()
     {
-        get
+        if (_instance == null)
         {
-            if (_instance == null)
-            {
-                _instance = FindObjectOfType<EnemyObjectPool>();
-            }
-
-            return _instance;
+            _instance = this;
         }
-    }
+        else
+        {
+            Destroy(gameObject);
+        }
 
-    [SerializeField] private EnemyObject _enemyPrefab;  // オブジェクトプールで管理するオブジェクト
-    private ObjectPool<EnemyObject> _enemyPool;  // オブジェクトプール本体
-
-    private void Start()
-    {
+        // プールの初期化
         _enemyPool = new ObjectPool<EnemyObject>(
-            createFunc: () => OnCreateObject(),
-            actionOnGet: (obj) => OnGetObject(obj),
-            actionOnRelease: (obj) => OnReleaseObject(obj),
-            actionOnDestroy: (obj) => OnDestroyObject(obj),
+            createFunc: OnCreateObject,
+            actionOnGet: OnGetObject,
+            actionOnRelease: OnReleaseObject,
+            actionOnDestroy: OnDestroyObject,
             collectionCheck: true,
-            defaultCapacity: 3,
-            maxSize: 10
+            defaultCapacity: _defaultCapacity,
+            maxSize: _maxSize
         );
     }
 
-    void Update()
+    /// <summary>
+    /// 敵を取得して指定した位置に配置します
+    /// </summary>
+    public EnemyObject SpawnEnemy(Vector3 position)
     {
-        if (Input.GetKeyDown(KeyCode.C))
-        {
-            GetEnemy();
-        }
-
-        if (Input.GetKeyDown(KeyCode.V))
-        {
-            ClearEnemy();
-        }
-    }
-    // プールからオブジェクトを取得する
-    public EnemyObject GetEnemy()
-    {
-        
-            return _enemyPool.Get();
-        
-        
+        EnemyObject enemy = _enemyPool.Get();
+        enemy.transform.position = position;
+        return enemy;
     }
 
-    // プールの中身を空にする
-    public void ClearEnemy()
-    {
-        _enemyPool.Clear();
-    }
+    public void ClearEnemy() => _enemyPool.Clear();
 
-    // プールに入れるインスタンスを新しく生成する際に行う処理
+    // --- ObjectPool 内部処理 ---
+
     private EnemyObject OnCreateObject()
     {
-        return Instantiate(_enemyPrefab, transform);
+        EnemyObject enemy = Instantiate(_enemyPrefab, transform);
+        // 返却用のActionを一度だけ登録
+        enemy.Initialize(ReleaseEnemy);
+        return enemy;
     }
 
-    // プールからインスタンスを取得した際に行う処理
-    private void OnGetObject(EnemyObject enemyObject)
+    private void OnGetObject(EnemyObject enemy)
     {
-        enemyObject.transform.position = new Vector3(Random.Range(-10, 10), 2, Random.Range(7, 16));
-        enemyObject.Initialize(() => _enemyPool.Release(enemyObject));
-        enemyObject.gameObject.SetActive(true);
+        enemy.gameObject.SetActive(true);
     }
 
-    // プールにインスタンスを返却した際に行う処理
-    private void OnReleaseObject(EnemyObject enemyObject)
+    private void OnReleaseObject(EnemyObject enemy)
     {
-        Debug.Log("Release");  // EnemyObject側で非アクティブにするのでログ出力のみ。ここで非アクティブにするパターンもある。
+        enemy.gameObject.SetActive(false);
     }
 
-    // プールから削除される際に行う処理
-    private void OnDestroyObject(EnemyObject enemyObject)
+    private void OnDestroyObject(EnemyObject enemy)
     {
-        Destroy(enemyObject.gameObject);
+        Destroy(enemy.gameObject);
+    }
+
+    // EnemyObjectから呼ばれる返却メソッド
+    private void ReleaseEnemy(EnemyObject enemy)
+    {
+        _enemyPool.Release(enemy);
     }
 }

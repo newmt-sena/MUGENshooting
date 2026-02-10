@@ -1,98 +1,77 @@
-using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Pool;
-using System.Collections;
-using System.Collections.Generic;
 
 public class BulletObjectPool : MonoBehaviour
 {
-    // アクセスしやすいようにシングルトン化
     private static BulletObjectPool _instance;
-    public static BulletObjectPool Instance
+    public static BulletObjectPool Instance => _instance;
+
+    [SerializeField] private BulletObject _bulletPrefab;
+    [SerializeField] private int _defaultCapacity = 10;
+    [SerializeField] private int _maxSize = 20;
+
+    private ObjectPool<BulletObject> _bulletPool;
+
+    private void Awake()
     {
-        get
+        if (_instance == null)
         {
-            if (_instance == null)
-            {
-                _instance = FindObjectOfType<BulletObjectPool>();
-            }
-
-            return _instance;
+            _instance = this;
         }
-    }
+        else
+        {
+            Destroy(gameObject);
+        }
 
-    [SerializeField] private BulletObject _BulletPrefab;  // オブジェクトプールで管理するオブジェクト
-    private ObjectPool<BulletObject> _BulletPool;  // オブジェクトプール本体
-
-   
-
-    private void Start()
-    {
-        _BulletPool = new ObjectPool<BulletObject>(
-            createFunc: () => OnCreateObject(),
-            actionOnGet: (obj) => OnGetObject(obj),
-            actionOnRelease: (obj) => OnReleaseObject(obj),
-            actionOnDestroy: (obj) => OnDestroyObject(obj),
+        // ObjectPoolの初期化
+        _bulletPool = new ObjectPool<BulletObject>(
+            createFunc: OnCreateObject,
+            actionOnGet: OnGetObject,
+            actionOnRelease: OnReleaseObject,
+            actionOnDestroy: OnDestroyObject,
             collectionCheck: true,
-            defaultCapacity: 3,
-            maxSize: 15
+            defaultCapacity: _defaultCapacity,
+            maxSize: _maxSize
         );
-
-        StartCoroutine(delete());
-
     }
 
-    private void Update()
-    {
-        
-
-    }
-
-    private IEnumerator delete()
-    {
-        while (true)
-        {
-            yield return new WaitForSeconds(5f);
-
-            ClearBullet();
-
-        }
-    }
-
-    // プールからオブジェクトを取得する
+    // プールから取得
     public BulletObject GetBullet()
     {
-        return _BulletPool.Get();
+        return _bulletPool.Get();
     }
 
-    // プールの中身を空にする
-    public void ClearBullet()
-    {
-        _BulletPool.Clear();
-    }
+    // --- ObjectPool 内部処理 ---
 
-    // プールに入れるインスタンスを新しく生成する際に行う処理
     private BulletObject OnCreateObject()
     {
-        return Instantiate(_BulletPrefab, transform);
+        BulletObject obj = Instantiate(_bulletPrefab, transform);
+        // 生成時に「どうやって返却するか」を一度だけ教えておく
+        obj.Initialize(ReleaseBullet);
+        return obj;
     }
 
-    // プールからインスタンスを取得した際に行う処理
-    private void OnGetObject(BulletObject BulletObject)
+    private void OnGetObject(BulletObject obj)
     {
-        BulletObject.Initialize(() => _BulletPool.Release(BulletObject));
-        BulletObject.gameObject.SetActive(true);
+        // 弾をアクティブにする処理はBulletObject.Fireで行うので、
+        // ここでは基本的な表示切り替えだけでOK
+        obj.gameObject.SetActive(true);
     }
 
-    // プールにインスタンスを返却した際に行う処理
-    private void OnReleaseObject(BulletObject BulletObject)
+    private void OnReleaseObject(BulletObject obj)
     {
-        Debug.Log("Release");  // BulletObject側で非アクティブにするのでログ出力のみ。ここで非アクティブにするパターンもある。
+        // 返却時は確実に非アクティブにする
+        obj.gameObject.SetActive(false);
     }
 
-    // プールから削除される際に行う処理
-    private void OnDestroyObject(BulletObject BulletObject)
+    private void OnDestroyObject(BulletObject obj)
     {
-        Destroy(BulletObject.gameObject);
+        Destroy(obj.gameObject);
+    }
+
+    // BulletObjectから呼ばれる返却用メソッド
+    private void ReleaseBullet(BulletObject obj)
+    {
+        _bulletPool.Release(obj);
     }
 }
