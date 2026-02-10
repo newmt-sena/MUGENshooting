@@ -108,11 +108,11 @@ public class Player : MonoBehaviour
         }
     }
 
-    private void OnTriggerEnter(Collider other)
+    private void OnCollisionEnter(Collision collision)
     {
-        if (other.CompareTag(enemyTag))
+        Debug.Log("何かに当たった");
+        if (collision.gameObject.CompareTag(enemyTag))
         {
-            // プレイヤー消滅時の処理（GameManager側で管理するのが綺麗です）
             GameManager.instance.AddDead();
             Destroy(gameObject);
         }
