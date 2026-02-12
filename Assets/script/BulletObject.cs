@@ -41,7 +41,7 @@ public class BulletObject : MonoBehaviour
         if (Physics.Raycast(transform.position, _direction, out RaycastHit hit, moveDistance))
         {
             // --- Ç±Ç±Ç™èdóvÅI ---
-            if (hit.collider.CompareTag("enemy"))
+            if (hit.collider.CompareTag("Enemy"))
             {
                 EnemyObject enemy = hit.collider.GetComponent<EnemyObject>();
                 if (enemy != null)

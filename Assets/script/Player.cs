@@ -9,7 +9,7 @@ public class Player : MonoBehaviour
 
     [Header("タゲッティング設定")]
     [SerializeField] private float detectionRange = 15f;
-    [SerializeField] private string enemyTag = "enemy";
+    [SerializeField] private string enemyTag = "Enemy";
 
     [Header("射撃設定")]
     [SerializeField] private Transform firePoint;
@@ -110,9 +110,11 @@ public class Player : MonoBehaviour
 
     private void OnCollisionEnter(Collision collision)
     {
-        Debug.Log("何かに当たった");
-        if (collision.gameObject.CompareTag(enemyTag))
+        Debug.Log("何かに当たった：" + collision.gameObject.name);
+
+        if (collision.gameObject.CompareTag("Enemy"))
         {
+            Debug.Log("Enemyにヒット");
             GameManager.instance.AddDead();
             Destroy(gameObject);
         }
@@ -124,4 +126,6 @@ public class Player : MonoBehaviour
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(transform.position, detectionRange);
     }
+
+
 }

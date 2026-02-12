@@ -39,7 +39,7 @@ public class EnemyObject : MonoBehaviour
         direction.y = 0f;
 
         float distance = direction.magnitude;
-        if (distance < 1.5f) return;
+       
 
         direction.Normalize();
 

@@ -442,21 +442,9 @@ MonoBehaviour:
   moveSpeed: 10
   rotationSpeed: 100
   detectionRange: 8
-  enemyTag: enemy
+  enemyTag: Enemy
   firePoint: {fileID: 494874337}
   bulletSpeed: 30
---- !u!114 &682279411
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 682279404}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3e0e2f9b2d99ddf418c6b5d09bcd45eb, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &705507993
 GameObject:
   m_ObjectHideFlags: 0
@@ -1428,6 +1416,10 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: -1071962800161952577, guid: e3672d31a5e9af74d9da8a41d801aec7, type: 3}
+      propertyPath: m_CollisionDetection
+      value: 2
+      objectReference: {fileID: 0}
     - target: {fileID: 3634421170273081624, guid: e3672d31a5e9af74d9da8a41d801aec7, type: 3}
       propertyPath: m_IsTrigger
       value: 1
